@@ -4,12 +4,6 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-/**
- * Created with IntelliJ IDEA.
- * User: nomiros
- * Date: 02/12/14
- * Time: 18:22
- */
 public class DecisionTreeBuilder<E extends Enum> {
 	private final Map<Instance<E>, Integer> map = new HashMap<>();
 	private final Map<String, List<Enum>> attributes = new HashMap<>();
@@ -30,7 +24,7 @@ public class DecisionTreeBuilder<E extends Enum> {
 	}
 
 	public DecisionTree<E> build() {
-		return build(map);
+		return build(map, attributes.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().size() - 1)));
 	}
 
 	public void setToleratedImpurity(double d) {
@@ -49,18 +43,25 @@ public class DecisionTreeBuilder<E extends Enum> {
 		stopCondition = m -> false;
 	}
 
-	private DecisionTree<E> build(Map<Instance<E>, Integer> map) {
-		if (!stopCondition.test(map)) {
+	private DecisionTree<E> build(Map<Instance<E>, Integer> map, Map<String, Integer> remainingTests) {
+		if (!stopCondition.test(map) || impurity(map, Optional.empty()) == 0.) {
 			Map<String, Double> gains = attributes.keySet().stream()
 					.collect(Collectors.toMap(k -> k, k -> gain(map, k)));
-			Optional<Map.Entry<String, Double>> entry = gains.entrySet().stream().filter(e -> Double.isFinite(e.getValue())).sorted(Comparator.comparingDouble(Map.Entry::getValue)).findFirst();
-			double impurity = impurity(map, Optional.empty());
-			if (!entry.map(e -> impurity - e.getValue() <= 0.00001).orElse(true)) // double rounding error-safe nullity comparison
-			{
+			Optional<Map.Entry<String, Double>> entry = gains.entrySet().stream()
+					.filter(e -> remainingTests.containsKey(e.getKey()))
+					.filter(e -> Double.isFinite(e.getValue()))
+					.sorted(Comparator.comparingDouble(Map.Entry::getValue)).findFirst();
+			if (entry.isPresent()) {
 				String key = entry.get().getKey();
 				Enum val = getMajoritaryClass(map, Optional.of(key));
 				Map<Instance<E>, Integer> complement = filter(map, Optional.of(key), val);
-				return new BinarySplitNode<>(key, val, build(map), build(complement));
+				Map<String, Integer> remaining = new HashMap<>(remainingTests);
+				int cnt = remainingTests.remove(key);
+				if (cnt == 1)
+					remaining.remove(key);
+				else
+					remaining.put(key, cnt - 1);
+				return new BinarySplitNode<>(key, val, build(map, remainingTests), build(complement, remaining));
 			}
 		}
 		return new SingleClassNode<>((E) getMajoritaryClass(map, Optional.empty()));

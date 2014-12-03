@@ -4,12 +4,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Created with IntelliJ IDEA.
- * User: nomiros
- * Date: 02/12/14
- * Time: 17:59
- */
 public class Instance<E extends Enum> {
 	private Map<String, Enum> map = new HashMap<>();
 	private E value;

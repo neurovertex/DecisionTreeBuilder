@@ -1,11 +1,8 @@
 package eu.neurovertex.cart;
 
-/**
- * Created with IntelliJ IDEA.
- * User: nomiros
- * Date: 03/12/14
- * Time: 00:07
- */
+import java.util.Arrays;
+import java.util.List;
+
 class BinarySplitNode<E extends Enum> extends DecisionTree<E> {
 	private static final String SUFFIX_PATTERN = ", edge label={node[midway,%s,font=\\scriptsize]{%s}}",
 								ELSENAME_PATTERN = "¬%s";
@@ -26,6 +23,16 @@ class BinarySplitNode<E extends Enum> extends DecisionTree<E> {
 	}
 
 	@Override
+	public List<DecisionTree<E>> getChildren() {
+		return Arrays.asList(ifEqual, ifNonEqual);
+	}
+
+	@Override
+	public boolean isLeaf() {
+		return false;
+	}
+
+	@Override
 	public E getValue(Instance<E> e) {
 		return getChild(e).getValue(e);
 	}
@@ -42,5 +49,13 @@ class BinarySplitNode<E extends Enum> extends DecisionTree<E> {
 			elseName = String.format(ELSENAME_PATTERN, val.name());
 		ifNonEqual.toLatex(sb, String.format(SUFFIX_PATTERN, "right", elseName), indent + "\t");
 		sb.append("]");
+	}
+
+	public String getAttribute() {
+		return attribute;
+	}
+
+	public Enum getValue() {
+		return val;
 	}
 }
